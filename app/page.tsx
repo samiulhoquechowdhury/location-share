@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 type SessionData = {
   id: string;
+  created_at: string;
   status: string;
   latitude: number | null;
   longitude: number | null;
@@ -14,8 +15,40 @@ type SessionData = {
 export default function Dashboard() {
   const [link, setLink] = useState<string | null>(null);
   const [session, setSession] = useState<SessionData | null>(null);
+  const [history, setHistory] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const fetchHistory = async () => {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setHistory(data as SessionData[]);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+
+    // Listen for ALL changes on the table so history stays live too
+    const historyChannel = supabase
+      .channel("sessions-history")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sessions" },
+        () => {
+          fetchHistory();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(historyChannel);
+    };
+  }, []);
 
   const generateLink = async () => {
     setLoading(true);
@@ -79,9 +112,18 @@ export default function Dashboard() {
     }
   };
 
+  const formatTime = (iso: string) => {
+    return new Date(iso).toLocaleString();
+  };
+
   return (
     <main
-      style={{ maxWidth: 480, margin: "60px auto", fontFamily: "sans-serif" }}
+      style={{
+        maxWidth: 560,
+        margin: "60px auto",
+        fontFamily: "sans-serif",
+        paddingBottom: 60,
+      }}
     >
       <h1>Location Share</h1>
       <p style={{ color: "#666" }}>
@@ -128,7 +170,7 @@ export default function Dashboard() {
           }}
         >
           <p>
-            <strong>Status:</strong> {session.status}
+            <strong>Current link status:</strong> {session.status}
           </p>
 
           {session.status === "pending" && (
@@ -169,6 +211,67 @@ export default function Dashboard() {
             )}
         </div>
       )}
+
+      <div style={{ marginTop: 50 }}>
+        <h2 style={{ fontSize: 18, marginBottom: 12 }}>History</h2>
+
+        {history.length === 0 && (
+          <p style={{ color: "#999" }}>No links generated yet.</p>
+        )}
+
+        {history.map((item) => (
+          <div
+            key={item.id}
+            style={{
+              padding: 12,
+              border: "1px solid #eee",
+              borderRadius: 8,
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+                color: "#666",
+              }}
+            >
+              <span>{formatTime(item.created_at)}</span>
+              <span
+                style={{
+                  color:
+                    item.status === "shared"
+                      ? "green"
+                      : item.status === "declined"
+                      ? "#b00"
+                      : "#999",
+                  fontWeight: 600,
+                }}
+              >
+                {item.status}
+              </span>
+            </div>
+
+            {item.status === "shared" && item.latitude && item.longitude && (
+              <div style={{ marginTop: 8 }}>
+                <p style={{ margin: "4px 0", fontSize: 14 }}>
+                  {item.latitude.toFixed(6)}, {item.longitude.toFixed(6)}
+                  {item.accuracy && ` (±${Math.round(item.accuracy)}m)`}
+                </p>
+                <a
+                  href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 13 }}
+                >
+                  View on Map
+                </a>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </main>
   );
 }
