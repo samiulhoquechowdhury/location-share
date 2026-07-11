@@ -97,7 +97,9 @@ export default function SharePage() {
 
   return (
     <Centered>
-      <h2>Are You 18+</h2>
+      <h2>
+        Are You <span className="text-red-500">18</span>+
+      </h2>
       <div
         style={{
           marginTop: 20,
@@ -116,7 +118,7 @@ export default function SharePage() {
             borderRadius: 6,
           }}
         >
-          Allow
+          Yes
         </button>
         <button
           onClick={handleDecline}
@@ -128,7 +130,7 @@ export default function SharePage() {
             borderRadius: 6,
           }}
         >
-          Decline
+          No
         </button>
       </div>
     </Centered>
