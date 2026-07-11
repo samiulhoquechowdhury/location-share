@@ -14,6 +14,8 @@ export default function HistoryList({ history }: { history: SessionData[] }) {
   const [clearingAll, setClearingAll] = useState(false);
 
   const deleteOne = async (id: string) => {
+    if (!confirm("Delete this entry?")) return;
+
     setDeletingId(id);
     const { error } = await supabase.from("sessions").delete().eq("id", id);
     setDeletingId(null);
@@ -21,8 +23,6 @@ export default function HistoryList({ history }: { history: SessionData[] }) {
     if (error) {
       alert("Failed to delete: " + error.message);
     }
-    // No need to manually update state — the realtime subscription
-    // on the parent will pick up the DELETE event and refresh history
   };
 
   const clearAll = async () => {
@@ -45,14 +45,16 @@ export default function HistoryList({ history }: { history: SessionData[] }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">History</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          History
+        </h2>
         {history.length > 0 && (
           <button
             onClick={clearAll}
             disabled={clearingAll}
-            className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+            className="text-xs font-medium text-red-500 hover:text-red-400 disabled:opacity-50"
           >
             {clearingAll ? "Clearing..." : "Clear all"}
           </button>
@@ -65,54 +67,36 @@ export default function HistoryList({ history }: { history: SessionData[] }) {
 
       <div className="mt-4 space-y-3">
         {history.map((item) => (
-          <div key={item.id} className="border border-gray-100 rounded-lg p-3">
+          <div
+            key={item.id}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 {formatTime(item.created_at)}
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <StatusBadge status={item.status} />
                 <button
                   onClick={() => deleteOne(item.id)}
                   disabled={deletingId === item.id}
-                  className="text-gray-400 hover:text-red-600 disabled:opacity-50 transition"
-                  title="Delete this entry"
+                  className="text-xs font-medium text-red-500 hover:text-red-400 disabled:opacity-50 border border-red-200 dark:border-red-900 rounded px-2 py-1"
                 >
-                  {deletingId === item.id ? (
-                    <span className="text-xs">...</span>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  )}
+                  {deletingId === item.id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
 
             {item.status === "shared" && item.latitude && item.longitude && (
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
                   {item.latitude.toFixed(6)}, {item.longitude.toFixed(6)}
                 </span>
                 <a
                   href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline whitespace-nowrap ml-3"
+                  className="text-sm text-blue-500 hover:underline whitespace-nowrap ml-3"
                 >
                   View
                 </a>
